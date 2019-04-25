@@ -17,28 +17,28 @@
  * <Phrase>  ::= '"' { <SearchWord> } '"'
  */
 
-/*ISR *Parser::FindPhrase( ) // "bill (nye|gates)" turn into??
- {
- ISR *word = stream.parseWord();
- if( word ) {
- ISRPhrase *self = new ISRPhrase( );
- self->addTerm( word );
- while( ( word = stream.parseWord() )) {
- self->addTerm( word );
- }
- return self;
- }
- 
- return nullptr;
- 
- }*/
+ISR *Parser::FindPhrase( ) // "bill (nye|gates)" turn into??
+{
+   ISR *word = stream.parseWord();
+   if( word ) {
+      ISRPhrase *self = new ISRPhrase( );
+      self->addTerm( word );
+      while( ( word = stream.parseWord() )) {
+         self->addTerm( word );
+      }
+      return self;
+   }
+   
+   return nullptr;
+   
+}
 
 ISR *Parser::FindOr( )
 {
    ISR *left = FindAnd( );
    if ( left )
    {
-      ISROr *self = new ISROr( );
+      ISR *self = new ISROr( );
       self->addTerm( left );
       while ( stream.Match( '|' ) || stream.Match( "OR" ) || stream.Match( "||" ) )
       {
@@ -59,7 +59,7 @@ ISR *Parser::FindAnd( )
    ISR *left = FindSimple( );
    if ( left )
    {
-      ISRAnd *self = new ISRAnd( );
+      ISR *self = new ISRAnd( );
       self->addTerm( left );
       while ( ( left = FindSimple( ) ) || stream.Match( '&' ) || stream.Match( "&&" ) || stream.Match( "AND" ) )
       {
@@ -85,11 +85,11 @@ ISR *Parser::FindAnd( )
 ISR *Parser::FindSimple( )
 {
    
-   /*if ( stream.Match( '"' ) ) {// PHRASE
+   if ( stream.Match( '"' ) ) {// PHRASE
     ISR *left = FindPhrase( );
     if ( left )
     {
-    ISRPhrase *self = new ISRPhrase( );
+    ISR *self = new ISRPhrase( );
     self->addTerm( left );
     if( !stream.Match( '"' ) )
     {
@@ -98,7 +98,7 @@ ISR *Parser::FindSimple( )
     return self;
     }
     }
-    else */if(stream.Match( '(' ) )
+    else if(stream.Match( '(' ) )
     {
        ISR *left = FindOr( );
        if ( left )

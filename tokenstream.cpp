@@ -141,7 +141,7 @@ ISR *TokenStream::parseWord( )
       location++;//get rid of whitespace
    }
    String strval = String( val );
-   return new ISR(strval);
+   return new ISRWord(strval);
 }
 
 bool is_char( const char c )

@@ -10,6 +10,7 @@
 #include <string>
 #include "expression.h"
 #include <cstring>
+#include "String.h"
 
 
 /**
