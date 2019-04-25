@@ -29,6 +29,7 @@ public:
    
    //ISR pointer to the end of the current doc
    ISR* docEnd;
+   virtual void printTerms() = 0;
    
    virtual void addTerm(ISR * phrase) = 0;
    virtual Location nextInstance() = 0;
@@ -113,10 +114,14 @@ class ISRPhrase : public ISR{
  // 4. If any ISR reaches the end, there is no match.
  
  //Finds next instance of phrase match
- virtual Location nextInstance() override{
-    
-    return 9;//seek(nearestStartLocation + 1);
- }
+   virtual Location nextInstance() override{
+      Location location = 0;
+      for(int i = 0; i < terms.size(); i++) {
+         cout << terms[i] << endl;
+         location += terms[i]->seek(0);
+         }
+         return location;
+         }
  
  private:
  unsigned nearestTerm, farthestTerm;
@@ -156,7 +161,7 @@ public:
    virtual Location nextInstance() override{
       Location location = 0;
       for(int i = 0; i < terms.size(); i++) {
-         cout << terms[i]->seek(0) << endl;
+         cout << terms[i] << endl;
          location += terms[i]->seek(0);
       }
       return location;
@@ -176,7 +181,6 @@ public:
    virtual void addTerm(ISR * phrase) override{
       terms.push_back(phrase);
    }
-   
    //Variable to keep track of how many terms are in 'terms' (because resize/reserve isn't implemented)
    unsigned numOfTerms = 0;
    
@@ -212,7 +216,7 @@ public:
    virtual Location nextInstance() override{
       Location location = 0;
       for(int i = 0; i < terms.size(); i++) {
-         cout << terms[i]->seek(0) << endl;
+         cout << terms[i] << endl;
          location += terms[i]->seek(0);
       }
       return location;
