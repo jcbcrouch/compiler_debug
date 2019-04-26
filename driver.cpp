@@ -19,7 +19,7 @@ int main( )
     while(std::getline( std::cin, input )) {
         
         Parser parser( input );
-        ISR *expr = parser.Parse( );
+        Isr *expr = parser.Parse( );
         if ( expr  && parser.fullParsed())
         {
             std::cout << expr->nextInstance( ) << "\n";

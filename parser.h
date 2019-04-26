@@ -35,13 +35,13 @@ class Parser
      * Return nullptr if it could not be found
      */
     
-    ISR *FindPhrase( );
+    Isr *FindPhrase( );
     
-    ISR *FindSimple( );
+    Isr *FindSimple( );
     
-    ISR *FindAnd( );
+    Isr *FindAnd( );
     
-    ISR *FindOr( );
+    Isr *FindOr( );
     
     
 public:
@@ -57,7 +57,7 @@ public:
      * The public interface of the parser. Call this function,
      * rather than the private internal functions.
      */
-    ISR *Parse( );
+    Isr *Parse( );
 };
 // class Parser
 

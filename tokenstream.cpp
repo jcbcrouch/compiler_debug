@@ -105,13 +105,13 @@ bool TokenStream::AllConsumed( ) const
    return location == input.size( );
 }
 
-ISR *TokenStream::parseWord( )
+Isr *TokenStream::parseWord( )
 {
    if ( location >= input.size( ) )
    {
       return nullptr;
    }
-   string val = "";
+   std::string val = "";
    size_t start = location;
    while ( location < input.size( ) && CharIsRelevant( input[ location ] ) && input[ location ] != ' ' && input[ location ] != '"' && input[ location ] != '&' && input[ location ] != '|' && input[ location ] != ')' && input[location] != '(' )
    {
@@ -141,7 +141,7 @@ ISR *TokenStream::parseWord( )
       location++;//get rid of whitespace
    }
    String strval = String( val );
-   return new ISRWord(strval);
+   return new IsrWord(strval);
 }
 
 bool is_char( const char c )

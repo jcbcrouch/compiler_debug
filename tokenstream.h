@@ -85,7 +85,7 @@ public:
     * Return a dynamically allocated phrase if successful, nullptr otherwise
     */
        
-    ISR *parseWord( );
+    Isr *parseWord( );
 
    };
 

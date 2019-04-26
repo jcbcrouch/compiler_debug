@@ -17,11 +17,11 @@
  * <Phrase>  ::= '"' { <SearchWord> } '"'
  */
 
-ISR *Parser::FindPhrase( ) // "bill (nye|gates)" turn into??
+Isr *Parser::FindPhrase( ) // "bill (nye|gates)" turn into??
 {
-   ISR *word = stream.parseWord();
+   Isr *word = stream.parseWord();
    if( word ) {
-      ISRPhrase *self = new ISRPhrase( );
+      IsrPhrase *self = new IsrPhrase( );
       self->addTerm( word );
       while( ( word = stream.parseWord() )) {
          self->addTerm( word );
@@ -33,12 +33,12 @@ ISR *Parser::FindPhrase( ) // "bill (nye|gates)" turn into??
    
 }
 
-ISR *Parser::FindOr( )
+Isr *Parser::FindOr( )
 {
-   ISR *left = FindAnd( );
+   Isr *left = FindAnd( );
    if ( left )
    {
-      ISR *self = new ISROr( );
+      IsrOr *self = new IsrOr( );
       self->addTerm( left );
       while ( stream.Match( '|' ) || stream.Match( "OR" ) || stream.Match( "||" ) )
       {
@@ -54,12 +54,12 @@ ISR *Parser::FindOr( )
    return nullptr;
 }
 
-ISR *Parser::FindAnd( )
+Isr *Parser::FindAnd( )
 {
-   ISR *left = FindSimple( );
+   Isr *left = FindSimple( );
    if ( left )
    {
-      ISR *self = new ISRAnd( );
+      IsrAnd *self = new IsrAnd( );
       self->addTerm( left );
       while ( ( left = FindSimple( ) ) || stream.Match( '&' ) || stream.Match( "&&" ) || stream.Match( "AND" ) )
       {
@@ -82,14 +82,14 @@ ISR *Parser::FindAnd( )
 }
 
 
-ISR *Parser::FindSimple( )
+Isr *Parser::FindSimple( )
 {
    
    if ( stream.Match( '"' ) ) {// PHRASE
-    ISR *left = FindPhrase( );
+    Isr *left = FindPhrase( );
     if ( left )
     {
-    ISR *self = new ISRPhrase( );
+    IsrPhrase *self = new IsrPhrase( );
     self->addTerm( left );
     if( !stream.Match( '"' ) )
     {
@@ -100,10 +100,10 @@ ISR *Parser::FindSimple( )
     }
     else if(stream.Match( '(' ) )
     {
-       ISR *left = FindOr( );
+       Isr *left = FindOr( );
        if ( left )
        {
-          ISROr *self = new ISROr( );
+          IsrOr *self = new IsrOr( );
           self->addTerm( left );
           if( !stream.Match( ')' ) )
           {   //must close
@@ -131,7 +131,7 @@ ISR *Parser::FindSimple( )
    return nullptr;
 }
 
-ISR *Parser::Parse( )
+Isr *Parser::Parse( )
 {
    return FindOr( );
    
