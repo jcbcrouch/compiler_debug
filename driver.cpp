@@ -13,6 +13,9 @@
 #include "expression.h"
 #include "parser.h"
 
+using std::cout;
+using std::endl;
+
 int main( )
 {
     std::string input;
@@ -22,6 +25,7 @@ int main( )
         Isr *expr = parser.Parse( );
         if ( expr  && parser.fullParsed())
         {
+            std::cout << expr->nextInstance( ) << "\n";
             std::cout << expr->nextInstance( ) << "\n";
             //for(int i = 0; i < expr->queries.size(); i++) {
               //  for(int j = 0; j < expr->queries[i]->queries.size(); j++) {
@@ -36,5 +40,9 @@ int main( )
         {
             help_message();
         }
+        
+        cout << expr->nextInstance();
+        cout << expr->nextInstance();
+        
     }
 }

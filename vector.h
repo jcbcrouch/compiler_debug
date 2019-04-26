@@ -1,3 +1,7 @@
+// Graham Eger added a resize() function that takes an argument on 04/08/2019
+// Jacob changed original numAllocated from 400 to 1 on 04/20/2019
+
+#pragma once
 #include <algorithm>
 template<class T>
 class Vector {
@@ -7,15 +11,18 @@ class Vector {
 private:
     
     T *elements; //pointer to dynamic array
-    unsigned long long numElements = 0;  //Current capacity
-    unsigned long long numAllocated = 1; //capacity of array
+    size_t numElements = 0;  //Current capacity
+    size_t numAllocated = 1; //capacity of array
     
 public:
     
     Vector();
     
     //EFFECTS: Constructor
-    Vector(unsigned long long num);
+    Vector(size_t num);
+    
+    //EFFECTS: Constructor
+    Vector( std::initializer_list< T > in_list );
     
     //Custom Destructor;
     ~Vector();
@@ -26,7 +33,10 @@ public:
     //Assignment operator
     Vector<T> &operator=(const Vector<T> &rhs);
     
+    void reserve(size_t n);
     void resize();
+    
+    void resize(size_t n);
     
     //REQUIRES: this IntVector is not full
     //MODIFIES: this IntVector
@@ -40,20 +50,22 @@ public:
     
     //REQUIRES: 0 <= index < number of elements in this IntVector
     //EFFECTS:  Returns (by reference) the element at the given index.
-    unsigned long long &at(unsigned long long index);
+    T &at(size_t index);
+    
+    const T& back();
     
     //REQUIRES: 0 <= index < number of elements in this IntVector
     //EFFECTS:  Returns (by reference) the element at the given index.
-    const unsigned long long &at(unsigned long long index) const;
+    const T &at(size_t index) const;
     
     //REQUIRES: 0 <= index < number of elements in this IntVector
     //EFFECTS:  Returns (by reference) the element at the given index.
-    T& operator[](unsigned long long index);
+    T& operator[](size_t index);
     
     //EFFECTS:  Returns the number of elements of this IntVector.
-    unsigned long long size() const;
+    size_t size() const;
     
-    unsigned long long capacity() const;
+    size_t capacity() const;
     
     //EFFECTS:  Returns true if this IntVector is empty, false otherwise.
     bool empty() const;
@@ -69,12 +81,18 @@ Vector<T>::Vector() {
 }
 
 template<class T>
-Vector<T>::Vector(unsigned long long capacity) {
+Vector<T>::Vector(size_t capacity) {
     numAllocated = capacity;
     elements = new T[numAllocated];
 }
 
-
+template< class T >
+Vector< T >::Vector( std::initializer_list< T > in_list )
+: elements( new T[ in_list.size( ) ] ), numAllocated( in_list.size( ) )
+{
+    for ( auto iterator = in_list.begin( ); iterator != in_list.end( ); iterator++ )
+        push_back( *iterator );
+}
 
 //copy constructor
 template<class T>
@@ -85,7 +103,7 @@ Vector<T>::Vector(const Vector<T> &other) {
     numAllocated = other.numAllocated;
     
     //2. Copy everything over
-    for(unsigned long long i = 0; i < other.numElements; i++) {
+    for(size_t i = 0; i < other.numElements; i++) {
         elements[i] = other.elements[i];
     }
     
@@ -103,7 +121,7 @@ Vector<T>& Vector<T>::operator=(const Vector<T> &rhs) {
     elements = new T[rhs.numAllocated];
     numElements = rhs.numElements;
     numAllocated = rhs.numAllocated;
-    for(unsigned long long i = 0; i < rhs.numElements; i++) {
+    for(size_t i = 0; i < rhs.numElements; i++) {
         elements[i] = rhs.elements[i];
     }
     return *this;
@@ -130,26 +148,31 @@ void Vector<T>::push_back(T value){
 //REQUIRES: 0 <= index < number of elements in this IntVector
 //EFFECTS:  Returns (by reference) the element at the given index.
 template<class T>
-const unsigned long long &Vector<T>::at(unsigned long long index) const {
+const T& Vector<T>::at(size_t index) const {
     return elements[index];
 }
 
 //REQUIRES: 0 <= index < number of elements in this IntVector
 //EFFECTS:  Returns (by reference) the element at the given index.
 template<class T>
-T& Vector<T>::operator[] (unsigned long long index) {
+T& Vector<T>::operator[] (size_t index) {
     return elements[index];
+}
+
+template<class T>
+const T& Vector<T>::back() {
+    return elements[this->size() - 1];
 }
 
 //EFFECTS:  Returns the number of elements of this IntVector.
 template<class T>
-unsigned long long Vector<T>::size() const {
+size_t Vector<T>::size() const {
     return numElements;
 }
 
 //EFFECTS:  Returns the number of elements of this IntVector.
 template<class T>
-unsigned long long Vector<T>::capacity() const {
+size_t Vector<T>::capacity() const {
     return numAllocated;
 }
 
@@ -170,10 +193,16 @@ bool Vector<T>::full() const {
 template<class T>
 void Vector<T>::resize() {
     T * tmp_array = new T[this->numAllocated * 2];
-    for (unsigned long long i = 0; i < numElements; i++) {
+    for (size_t i = 0; i < numElements; i++) {
         tmp_array[i] = elements[i];
     }
     std::swap(tmp_array, elements);
     numAllocated *= 2;
     delete [] tmp_array;
+}
+
+
+template<class T>
+void Vector<T>::pop_back(){
+    numElements--;
 }

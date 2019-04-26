@@ -38,7 +38,7 @@ public:
    virtual Location SeekToLocation(Location target) = 0;
    
    //First number in the posting list of a term
-   virtual Location getClosestStartLocation() = 0;
+   virtual Location GetCurrentInstance() = 0;
    
    //Last number in the posting list of a term
    virtual Location getClosestEndLocation() = 0;
@@ -52,17 +52,19 @@ public:
 
 class IsrWord : public Isr {
 public:
-   IsrWord( String &word_in ) : word(word_in){}
+    IsrWord() {}
+    IsrWord( String &word_in );
    void SetLocations( Vector<Location>& matchesIn );
    //    ~IsrWord( );
    
    Location nextInstance( )override;
    Location SeekToLocation( Location seekDestination = 0 )override;
-   Location getClosestStartLocation() override;
+   Location GetCurrentInstance() override;
    Location getClosestEndLocation() override;
    //Location CurInstance() const override;
    void AddWord(String &wordIn);
-   
+   DocumentAttributes GetDocInfo();
+
    void SetImportance(unsigned importanceIn);
    
    
@@ -91,7 +93,7 @@ public:
    }
    
    //Variable to keep track of how many terms are in 'terms' (because resize/reserve isn't implemented)
-   unsigned numOfTerms = 0;
+//   unsigned numOfTerms = 0;
    
    //Constructor for IsrOr, MUST be in a vector<Isr> format, otherwise it wont compile
    IsrOr(Vector<Isr*> phrasesToInsert);
@@ -101,13 +103,33 @@ public:
    //    ~IsrOr( ){}
    
    //Points to the closest 'beginning of page'
-   Location getClosestStartLocation() override {
-      return nearestStartLocation;
+   Location GetCurrentInstance() override {
+       if (nearestStartLocation != 0){
+           return nearestStartLocation;
+       }
+       //Find the first instance of a word. Only go down here on first call to nextInstance()
+       Location tempTracker = ULLONG_MAX;
+       for (int i = 0; i < terms.size(); ++i){
+           if (terms[i]->GetCurrentInstance() < tempTracker){
+               tempTracker = terms[i]->GetCurrentInstance();
+           }
+       }
+       nearestStartLocation = tempTracker;
+       return nearestStartLocation;
    }
    
    //Points to the closest 'end of page'
    Location getClosestEndLocation() override {
-      return nearestEndLocation;
+       if (nearestEndLocation != 0){
+           return nearestEndLocation;
+       }
+       
+       //Since nearestEndLocation is initialized to 0, we find the first endDoc thru here
+       IsrWord pageEnd;
+       String blank = "";
+       pageEnd.AddWord(blank);
+       nearestEndLocation = pageEnd.SeekToLocation(nearestStartLocation);
+       return nearestEndLocation;
    }
    
    //Move all Isrs to the first occurrence of their respective word at 'target' or later
@@ -132,7 +154,8 @@ public:
 private:
    //
    unsigned nearestTerm = 99999;
-   Location nearestStartLocation, nearestEndLocation;
+    Location nearestStartLocation = 0;
+    Location nearestEndLocation = 0;
 };
 
 class IsrAnd : public Isr{
@@ -141,7 +164,7 @@ public:
    Vector<Isr*> terms;
    
    //Keeps track of how many terms we have
-   unsigned numOfTerms = 0;
+   //unsigned numOfTerms = 0;
    
    //Constructor for IsrAnd
    IsrAnd(Vector<Isr*> phrasesToInsert);
@@ -167,13 +190,37 @@ public:
    }
    
    //Points to the closest 'beginning of page'
-   Location getClosestStartLocation() override {
+   Location GetCurrentInstance() override {
+       if (nearestStartLocation != 0){
+           return nearestStartLocation;
+       }
+       Location closestTerm = 9999999;
+       Location farthestTerm = 0;
+       for (int i = 0; i < terms.size(); ++i){
+           if (terms[i]->GetCurrentInstance() < closestTerm){
+               nearestTerm = i;
+               closestTerm = terms[i]->GetCurrentInstance();
+           }
+           if (terms[i]->GetCurrentInstance() > farthestTerm){
+               farthestTerm = i;
+           }
+       }
+       nearestStartLocation = closestTerm;
       return nearestStartLocation;
    }
    
    //Points to the closest 'end of page'
    Location getClosestEndLocation() override {
-      return nearestEndLocation;
+       if (nearestEndLocation != 0){
+           return nearestEndLocation;
+       }
+       
+       //Since nearestEndLocation is initialized to 0, we find the first endDoc thru here
+       IsrWord pageEnd;
+       String blank = "";
+       pageEnd.AddWord(blank);
+       nearestEndLocation = pageEnd.SeekToLocation(nearestStartLocation);
+       return nearestEndLocation;
    }
    
    void addTerm(Isr* word) {
@@ -181,8 +228,10 @@ public:
    }
    
 private:
-   unsigned nearestTerm, farthestTerm;
-   Location nearestStartLocation, nearestEndLocation;
+    unsigned nearestTerm = 0;
+    unsigned farthestTerm = 0;
+    Location nearestStartLocation = 0;
+    Location nearestEndLocation = 0;
 };
 
 class IsrPhrase : public Isr{
@@ -191,7 +240,7 @@ public:
    Vector<Isr*> terms;
    
    //Keeps track of how many terms we have
-   unsigned numOfTerms = 0;
+   //unsigned numOfTerms = 0;
    
    IsrPhrase() {}
    
@@ -210,8 +259,8 @@ public:
    }
    
    //end me
-   Location getClosestStartLocation() override{
-      return terms[0]->getClosestStartLocation();
+   Location GetCurrentInstance() override{
+      return terms[0]->GetCurrentInstance();
    }
    
    //end me 2
@@ -224,7 +273,8 @@ public:
    }
    
 private:
-   unsigned nearestTerm, farthestTerm;
+    unsigned nearestTerm = 0;
+    unsigned farthestTerm = terms.size() - 1;
    Location nearestStartLocation, nearestEndLocation;
 };
 
@@ -255,7 +305,9 @@ private:
 class IsrEndDoc : public IsrWord
 {
 public:
+   IsrEndDoc() {}
    DocumentAttributes GetDocInfo();
+   void AddMatches(Vector<Location>& matchesIn);
 };
 
 #endif /* constraint_solver_hpp */

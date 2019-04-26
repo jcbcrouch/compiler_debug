@@ -78,7 +78,57 @@
  Isr::Isr(Vector<Location> matchesIn)
  : matches(matchesIn), curInd(0) {}
  */
-//JACOB TODO: DEFINE CONSTRUCTOR FOR ISR WORD
+
+
+void IsrEndDoc::AddMatches(Vector<Location>& matchesIn)
+{
+    matches = matchesIn;
+}
+
+IsrWord::IsrWord(String& wordIn)
+: word(wordIn), curInd(0)
+{
+    String quick = "quick";
+    String brown = "brown";
+    String fox = "fox";
+    String empty = "";
+    if(word.Compare(quick))
+    {
+        matches.push_back(4);
+        matches.push_back(5);
+        matches.push_back(13);
+        matches.push_back(22);
+    }
+    else if(word.Compare(brown))
+    {
+        matches.push_back(3);
+        matches.push_back(7);
+    }
+    else if(word.Compare(fox))
+    {
+        matches.push_back(2);
+        matches.push_back(14);
+        matches.push_back(23);
+    }
+    else if(word.Compare(empty))
+    {
+        matches.push_back(10);
+        matches.push_back(20);
+        matches.push_back(30);
+        matches.push_back(40);
+    }
+    else
+    {
+        printf("wrong word!!!!!!!!");
+        return;
+    }
+    
+    //populate current instance
+    if(matches.empty())
+        currentLocation = 0;
+    else
+        currentLocation = matches[0];
+}
 
 Location IsrWord::nextInstance()
 {
@@ -127,7 +177,7 @@ bool IsrWord::hasNextInstance()
    return curInd < matches.size() - 1;
 }
 
-Location IsrWord::getClosestStartLocation()
+Location IsrWord::GetCurrentInstance()
 {
    return currentLocation;
 }
@@ -153,6 +203,22 @@ DocumentAttributes IsrEndDoc::GetDocInfo()
    return docInfo;
 }
 
+DocumentAttributes IsrWord::GetDocInfo()
+{
+    DocumentAttributes docInfo;
+    docInfo.DocID = curInd;
+    if(curInd == 0)
+    {
+        docInfo.DocumentLength = matches[curInd] - 1;
+    }
+    else
+    {
+        docInfo.DocumentLength = matches[curInd] - matches[curInd - 1];
+    }
+    return docInfo;
+}
+
+
 void IsrWord::AddWord(String &wordIn)
 {
    word = wordIn;
@@ -168,10 +234,9 @@ void IsrWord::SetImportance(unsigned importanceIn)
 //////////
 IsrOr::IsrOr(Vector<Isr*> phrasesToInsert){
    for (int i = 0; i < phrasesToInsert.size(); ++i){
-      
       terms.push_back(phrasesToInsert[i]);
    }
-   numOfTerms += phrasesToInsert.size();
+
 }
 
 Location IsrOr::SeekToLocation(Location target){
@@ -179,14 +244,28 @@ Location IsrOr::SeekToLocation(Location target){
    // 1. Seek all ISRs to the first occurrence beginning at the target location.
    // 2. Loop through all the terms and return the term location which is smallest
    //Returns 0 if there is no match
-   Location closestTerm = ULLONG_MAX;
+    Location closestTerm;
+    if (nearestStartLocation != 0){
+        closestTerm = nearestStartLocation;
+    }
+    else {
+        Location tempTracker = 99999;
+        
+        for (int i = 0; i < terms.size(); ++i){
+            if (terms[i]->GetCurrentInstance() < tempTracker){
+                tempTracker = terms[i]->GetCurrentInstance();
+                nearestTerm = i;
+            }
+        }
+        closestTerm = tempTracker;
+    }
    //Step 1: seek all ISRs to first occurrence after target location
-   for (int i = 0; i < numOfTerms; ++i){
+   for (int i = 0; i < terms.size(); ++i){
       //Traverse each term's posting list until it goes past 'target' or reaches the end
-      while (terms[i]->getClosestStartLocation() < target){
+      while (terms[i]->GetCurrentInstance() < target){
          //We've looped thru all terms, and nextInstance of the last term DNE,
          //so no term exists after location target
-         if (terms[i]->nextInstance() == 0 && i == numOfTerms - 1 && closestTerm == ULLONG_MAX){
+         if (terms[i]->nextInstance() == 0 && i == terms.size() - 1 && closestTerm == 0){
             return 0;
          }
          Location nextLocation = terms[i]->nextInstance();
@@ -194,6 +273,10 @@ Location IsrOr::SeekToLocation(Location target){
          if (nextLocation < closestTerm && nextLocation >= target){
             closestTerm = nextLocation;
             nearestTerm = i;
+         }
+          //First pass
+         else if (closestTerm == 0){
+             closestTerm = nextLocation;
          }
       }
    }
@@ -217,13 +300,13 @@ Location IsrOr::nextInstance(){
    if (nearestTerm != 99999){
       terms[nearestTerm]->nextInstance();
       Location closestTerm = ULLONG_MAX;
-      for (int i = 0; i < numOfTerms; ++i){
-         if (terms[i]->getClosestStartLocation() < closestTerm && terms[i]->getClosestStartLocation() != 0){
-            closestTerm = terms[i]->getClosestStartLocation();
+      for (int i = 0; i < terms.size(); ++i){
+         if (terms[i]->GetCurrentInstance() < closestTerm && terms[i]->GetCurrentInstance() != 0){
+            closestTerm = terms[i]->GetCurrentInstance();
             nearestTerm = i;
          }
          //There are no next instances of any of the terms
-         if (terms[i]->getClosestStartLocation() == 0 && i == numOfTerms - 1 && closestTerm == ULLONG_MAX){
+         if (terms[i]->GetCurrentInstance() == 0 && i == terms.size() - 1 && closestTerm == ULLONG_MAX){
             return 0;
          }
       }
@@ -236,7 +319,7 @@ Location IsrOr::nextInstance(){
    //Case 2: nearestTerm is not initialized yet, this is the first call of nextInstance()
    //so we must find the term that is closest to the start of a posting list
    else {
-      return SeekToLocation(0);
+      return SeekToLocation(1);
    }
    
 }
@@ -254,7 +337,6 @@ IsrAnd::IsrAnd(Vector<Isr*> phrasesToInsert){
    for (int i = 0; i < phrasesToInsert.size(); ++i){
       terms.push_back(phrasesToInsert[i]);
    }
-   numOfTerms += phrasesToInsert.size();
 }
 
 
@@ -268,30 +350,32 @@ Location IsrAnd::SeekToLocation(Location target){
    Vector<std::pair<Isr*, Location>>docTracker;
    
    //Step 1: seek all ISRs to first occurrence after target location
-   for (int i = 0; i < numOfTerms; ++i){
+   for (int i = 0; i < terms.size(); ++i){
       //Traverse each term's posting list until it goes past 'target' or reaches the end
-      while (terms[i]->getClosestStartLocation() < target){
+      while (terms[i]->GetCurrentInstance() < target){
          //None of the posting list terms are on the same page
          if (terms[i]->nextInstance() == 0){
             return 0;
          }
-         Location nextLocation = terms[i]->nextInstance();
-         String blank = "";
-         IsrWord nextPage(blank);
-         Location pageEnd = nextPage.SeekToLocation(nextLocation);
-         std::pair<Isr*, Location> toInsert(terms[i], pageEnd);
-         docTracker.push_back(toInsert);
+         terms[i]->nextInstance();
       }
+       String blank = "";
+       IsrWord nextPage(blank);
+       Location pageEnd = nextPage.SeekToLocation(terms[i]->GetCurrentInstance());
+       std::pair<Isr*, Location> toInsert(terms[i], pageEnd);
+       docTracker.push_back(toInsert);
       
    }
    
    Location latestPage = 0;
+    unsigned latestPageIndex = 0;
    bool allSamePage = false;
    while (!allSamePage){
       //Step 2: Find the furthest term's page
       for (int i = 0; i < docTracker.size(); ++i){
          if (docTracker[i].second > latestPage){
             latestPage = docTracker[i].second;
+             latestPageIndex = i;
          }
       }
       
@@ -299,21 +383,30 @@ Location IsrAnd::SeekToLocation(Location target){
       bool pageAltered = false;
       for (int i = 0; i < docTracker.size(); ++i){
          if (docTracker[i].second < latestPage){
-            while (docTracker[i].first->getClosestStartLocation() < latestPage){
+             String blank = "";
+             IsrWord nextPage(blank);
+             //While term i's page is less than the current page
+            while (docTracker[i].first->GetCurrentInstance() < latestPage ) {
                //Step 4: Check if any pages reach the end
                if (docTracker[i].first->nextInstance() == 0){
                   return 0;
                }
-               //Update the IsrWord index and latest page
+                //Check if the wordISR we're moving has reached the same document as the furthest term ISR
+                Location valToCompare = nextPage.SeekToLocation(docTracker[i].first->GetCurrentInstance());
+                if (valToCompare > docTracker[latestPageIndex].second){
+                    pageAltered = true;
+                }
+                //Update the IsrWord index and latest page
+                docTracker[i].second = valToCompare;
                docTracker[i].first->nextInstance();
-               String blank = "";
-               IsrWord nextPage(blank);
-               Location valToCompare = nextPage.SeekToLocation(docTracker[i].first->getClosestStartLocation());
-               if (valToCompare != docTracker[i].second){
-                  pageAltered = true;
-               }
-               docTracker[i].second = nextPage.SeekToLocation(docTracker[i].first->getClosestStartLocation());
             }
+             //We must check the page end again in case the term appears after the furthest term, but on the same page
+             Location valToCompare = nextPage.SeekToLocation(docTracker[i].first->GetCurrentInstance());
+             if (valToCompare == docTracker[latestPageIndex].second){
+                 pageAltered = false;
+                 docTracker[i].second = valToCompare;
+             }
+             
          }
       }
       //Go back to step 2 if we moved any ISRs
@@ -322,15 +415,15 @@ Location IsrAnd::SeekToLocation(Location target){
       }
    }
    
-   Location earliestPost = ULLONG_MAX;
+    Location earliestPost = 999999;
    Location latestPost = 0;
    for (int i = 0; i < docTracker.size(); ++i){
-      if (docTracker[i].first->getClosestStartLocation() < earliestPost){
-         earliestPost = docTracker[i].first->getClosestStartLocation();
+      if (docTracker[i].first->GetCurrentInstance() < earliestPost){
+         earliestPost = docTracker[i].first->GetCurrentInstance();
          nearestTerm = i;
       }
-      if (docTracker[i].first->getClosestStartLocation() > latestPost){
-         latestPost = docTracker[i].first->getClosestStartLocation();
+      if (docTracker[i].first->GetCurrentInstance() > latestPost){
+         latestPost = docTracker[i].first->GetCurrentInstance();
          farthestTerm = i;
       }
    }
@@ -374,9 +467,9 @@ Location IsrPhrase::SeekToLocation(Location target){
    Vector<Location>locationTracker;
    
    //Step 1: seek all ISRs to first occurrence after target location
-   for (int i = 0; i < numOfTerms; ++i){
+   for (int i = 0; i < terms.size(); ++i){
       //Traverse each term's posting list until it goes past 'target' or reaches the end
-      while (terms[i]->getClosestStartLocation() < target){
+      while (terms[i]->GetCurrentInstance() < target){
          //None of the posting list terms are on the same page
          if (terms[i]->nextInstance() == 0){
             return 0;
@@ -432,7 +525,7 @@ Location IsrPhrase::SeekToLocation(Location target){
          if (i < farthestTermIndex){
             Location wordOffset = farthestTermIndex - i;
             Location expectedPosition = locationTracker[farthestTermIndex] - wordOffset;
-            while (terms[i]->getClosestStartLocation() < expectedPosition){
+            while (terms[i]->GetCurrentInstance() < expectedPosition){
                //Term does not exist in remaining posting lists
                if (terms[i]->nextInstance() == 0){
                   return 0;
@@ -443,7 +536,7 @@ Location IsrPhrase::SeekToLocation(Location target){
          else if (i > farthestTermIndex){
             Location wordOffset = farthestTermIndex + i;
             Location expectedPosition = locationTracker[farthestTermIndex] + wordOffset;
-            while (terms[i]->getClosestStartLocation() < expectedPosition){
+            while (terms[i]->GetCurrentInstance() < expectedPosition){
                //Term does not exist in remaining posting lists
                if (terms[i]->nextInstance() == 0){
                   return 0;
@@ -458,7 +551,7 @@ Location IsrPhrase::SeekToLocation(Location target){
    
    //Update ISRPhrase variables
    nearestTerm = 0;
-   farthestTerm = numOfTerms - 1;
+   farthestTerm = terms.size() - 1;
    nearestStartLocation = locationTracker[0];
    String blank = "";
    IsrWord endPage(blank);
